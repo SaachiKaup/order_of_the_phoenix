@@ -2,6 +2,16 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["al2023-ami-*-x86_64"]
+  }
+}
+
 locals {
   name = var.project_name
   azs  = slice(data.aws_availability_zones.available.names, 0, 2)
@@ -19,6 +29,17 @@ module "vpc" {
 
   enable_dns_hostnames = true
   enable_dns_support   = true
+}
+
+resource "aws_instance" "app_ec2" {
+  ami                    = data.aws_ami.amazon_linux.id
+  instance_type          = var.ec2_instance_type
+  subnet_id              = module.vpc.public_subnets[0]
+  vpc_security_group_ids = [aws_security_group.app_ec2_sg.id]
+
+  tags = {
+    Name = "${local.name}-app"
+  }
 }
 
 resource "aws_security_group" "app_ec2_sg" {
@@ -60,15 +81,6 @@ resource "aws_security_group_rule" "app_alb_ingress_http" {
   protocol          = "tcp"
 }
 
-resource "aws_security_group_rule" "app_alb_ingress_https" {
-  type              = "ingress"
-  security_group_id = aws_security_group.app_alb_sg.id
-  cidr_blocks       = ["0.0.0.0/0"]
-  from_port         = 443
-  to_port           = 443
-  protocol          = "tcp"
-}
-
 resource "aws_security_group_rule" "app_alb_egress_ec2" {
   type                     = "egress"
   security_group_id        = aws_security_group.app_alb_sg.id
@@ -93,3 +105,35 @@ resource "aws_security_group_rule" "app_rds_ingress_postgres" {
   protocol                 = "tcp"
 }
 
+resource "aws_lb" "app_alb" {
+  name               = "${local.name}-alb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.app_alb_sg.id]
+  subnets            = module.vpc.public_subnets
+}
+
+resource "aws_lb_target_group" "app_alb_tg" {
+  name        = "${local.name}-alb-tg"
+  port        = var.app_port
+  protocol    = "HTTP"
+  vpc_id      = module.vpc.vpc_id
+  target_type = "instance"
+}
+
+resource "aws_lb_listener" "http" {
+  load_balancer_arn = aws_lb.app_alb.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.app_alb_tg.arn
+  }
+}
+
+resource "aws_lb_target_group_attachment" "app_alb_tg_attachment" {
+  target_group_arn = aws_lb_target_group.app_alb_tg.arn
+  target_id        = aws_instance.app_ec2.id
+  port             = var.app_port
+}
