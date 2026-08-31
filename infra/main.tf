@@ -20,3 +20,27 @@ module "vpc" {
   enable_dns_hostnames = true
   enable_dns_support   = true
 }
+
+resource "aws_security_group" "app_ec2_sg" {
+  name        = "${local.name}-ec2-sg"
+  description = "Security group for the EC2 app host"
+  vpc_id      = module.vpc.vpc_id
+}
+
+resource "aws_security_group_rule" "app_ec2_from_alb" {
+  type                     = "ingress"
+  security_group_id        = aws_security_group.ec2.id
+  source_security_group_id = aws_security_group.alb.id
+  from_port                = var.app_port
+  to_port                  = var.app_port
+  protocol                 = "tcp"
+}
+
+resource "aws_security_group_rule" "app_ec2_egress_all" {
+  type              = "egress"
+  security_group_id = aws_security_group.ec2.id
+  cidr_blocks       = ["0.0.0.0/0"]
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+}
