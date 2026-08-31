@@ -16,3 +16,22 @@ Ready to run in production? Please [check our deployment guides](https://phoenix
 * Docs: https://phoenix.hexdocs.pm
 * Forum: https://elixirforum.com/c/phoenix-forum
 * Source: https://github.com/phoenixframework/phoenix
+
+
+### Setup Steps used to make app
+
+```shell
+mix archive.install hex phx_new
+```
+
+From parent dir:
+```shell
+mix phx.new order_of_the_phoenix
+```
+
+Needed to have postgres installed, up and running, with postgres user for next step
+```shell
+mix ecto.create
+```
+
+Running Steps Phoenix only covers above.
