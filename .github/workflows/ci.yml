@@ -1,0 +1,41 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  app:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: order_of_the_phoenix_dev
+        ports:
+          - 5432:5432
+
+    env:
+      DATABASE_URL: ecto://postgres:postgres@localhost:5432/order_of_the_phoenix_dev
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.17.3"
+          otp-version: "27.2"
+
+      - working-directory: order_of_the_phoenix
+        run: mix deps.get
+
+      - working-directory: order_of_the_phoenix
+        run: mix ecto.create
+
+      - working-directory: order_of_the_phoenix
+        run: mix phx.server
+
