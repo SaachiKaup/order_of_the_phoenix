@@ -137,3 +137,23 @@ resource "aws_lb_target_group_attachment" "app_alb_tg_attachment" {
   target_id        = aws_instance.app_ec2.id
   port             = var.app_port
 }
+
+resource "aws_db_subnet_group" "app_rds" {
+  name       = "${local.name}-rds-subnet-group"
+  subnet_ids = module.vpc.private_subnets
+}
+
+resource "aws_db_instance" "app_rds" {
+  identifier             = "${local.name}-db"
+  engine                 = "postgres"
+  instance_class         = var.rds_instance_type
+  allocated_storage      = var.rds_allocated_storage
+  db_name                = var.rds_db_name
+  username               = var.rds_db_username
+  password               = var.rds_db_password
+  db_subnet_group_name   = aws_db_subnet_group.app_rds.name
+  vpc_security_group_ids = [aws_security_group.app_rds_sg.id]
+
+  publicly_accessible = false
+  skip_final_snapshot = true
+}
