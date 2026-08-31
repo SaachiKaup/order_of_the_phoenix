@@ -50,12 +50,12 @@ variable "vpc_cidr" {
 }
 
 variable "vpc_public_subnets" {
-  default     = ["10.0.101.0/24"]
+  default     = ["10.0.101.0/24", "10.0.102.0/24"]
   description = "Public subnet for the VPC"
 }
 
 variable "vpc_private_subnets" {
-  default     = ["10.0.1.0/24"]
+  default     = ["10.0.1.0/24", "10.0.2.0/24"]
   description = "Private subnets for the VPC"
 }
 
@@ -73,4 +73,12 @@ variable "rds_instance_type" {
 variable "rds_db_password" {
   type      = string
   sensitive = true
+}
+
+variable "ec2_key_name" {
+  type = string
+}
+
+variable "ssh_allowed_cidr" {
+  type = string
 }

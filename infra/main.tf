@@ -35,10 +35,12 @@ resource "aws_instance" "app_ec2" {
   ami                    = data.aws_ami.amazon_linux.id
   instance_type          = var.ec2_instance_type
   subnet_id              = module.vpc.public_subnets[0]
+  associate_public_ip_address = true
   vpc_security_group_ids = [aws_security_group.app_ec2_sg.id]
+  key_name               = var.ec2_key_name
 
   tags = {
-    Name = "${local.name}-app"
+    Name = "${local.name}-app-instance"
   }
 }
 
@@ -55,6 +57,15 @@ resource "aws_security_group_rule" "app_ec2_from_alb" {
   from_port                = var.app_port
   to_port                  = var.app_port
   protocol                 = "tcp"
+}
+
+resource "aws_security_group_rule" "app_ec2_ssh" {
+  type              = "ingress"
+  security_group_id  = aws_security_group.app_ec2_sg.id
+  cidr_blocks       = [var.ssh_allowed_cidr]
+  from_port         = 22
+  to_port           = 22
+  protocol          = "tcp"
 }
 
 resource "aws_security_group_rule" "app_ec2_egress_all" {
@@ -156,4 +167,13 @@ resource "aws_db_instance" "app_rds" {
 
   publicly_accessible = false
   skip_final_snapshot = true
+}
+
+resource "aws_ecr_repository" "app_ecr" {
+  name                 = "${local.name}-ecr"
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
 }
