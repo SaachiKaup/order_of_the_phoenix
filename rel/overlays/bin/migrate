@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+
+cd -P -- "$(dirname -- "$0")"
+exec ./order_of_the_phoenix eval OrderOfThePhoenix.Release.migrate
