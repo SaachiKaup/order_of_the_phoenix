@@ -19,23 +19,29 @@ jobs:
         ports:
           - 5432:5432
 
-    env:
-      DATABASE_URL: ecto://postgres:postgres@localhost:5432/order_of_the_phoenix_dev
-
     steps:
       - uses: actions/checkout@v4
 
-      - uses: erlef/setup-beam@v1
-        with:
-          elixir-version: "1.17.3"
-          otp-version: "27.2"
+      - name: Build image
+        run: docker build -t order-of-the-phoenix:ci ./order_of_the_phoenix
 
-      - working-directory: order_of_the_phoenix
-        run: mix deps.get
+      - name: Run app container
+        run: |
+          docker run -d --name order-of-the-phoenix-ci \
+            --network host \
+            -e DATABASE_URL=ecto://postgres:postgres@127.0.0.1:5432/order_of_the_phoenix_dev \
+            -e SECRET_KEY_BASE=0123456789012345678901234567890123456789012345678901234567890123 \
+            -e PHX_SERVER=true \
+            -e PORT=4000 \
+            order-of-the-phoenix:ci
 
-      - working-directory: order_of_the_phoenix
-        run: mix ecto.create
+      - name: Wait for app
+        run: sleep 20
 
-      - working-directory: order_of_the_phoenix
-        run: mix phx.server
+      - name: Check homepage
+        run: curl --fail http://127.0.0.1:4000
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker logs order-of-the-phoenix-ci
 
