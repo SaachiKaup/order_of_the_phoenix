@@ -35,3 +35,5 @@ order_of_the_phoenix-*.tar
 npm-debug.log
 /assets/node_modules/
 
+### Terraform
+infra/.terraform/
