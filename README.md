@@ -90,13 +90,21 @@ Role is also used during ECR setup. As in to push images to ECR. This was done f
 
 ![Successful Terraform, publish, deploy, test, and vulnerability scan jobs](images/workflow-success.png)
 
+### Notifications
+
+GitHub email notifications are configured for failed workflow runs.
+
+![GitHub email notification for a failed workflow](images/github-failure-notification.png)
+
 ### Other Tradeoffs
 
-While some are mentioned earlier, did not configure HTTPS as well for end application URL.
+HTTPS is not configured for simplicity. ALB has only an HTTP listener and no certificates.
 
 ### Cost optimization measures
 
 Since application is small, t3.micro EC2 instance and db.t3.micro RDS used. RDS automated backup retention is 7 days.
+
+![RDS automated backup retention period](images/rds-backup-retention.png)
 
 ### Refs
 
