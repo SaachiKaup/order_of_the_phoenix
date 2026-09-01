@@ -163,6 +163,9 @@ jobs:
           docker run --detach \
             --name order-of-the-phoenix \
             --restart unless-stopped \
+            --log-driver awslogs \
+            --log-opt awslogs-region="${AWS_REGION}" \
+            --log-opt awslogs-group="/${PROJECT_NAME}/app-logs" \
             --publish "${APP_PORT}:${APP_PORT}" \
             --env DATABASE_URL='${DATABASE_URL}' \
             --env PORT="${APP_PORT}" \

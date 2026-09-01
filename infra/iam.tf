@@ -33,3 +33,29 @@ resource "aws_iam_instance_profile" "app_ec2_profile" {
   role = aws_iam_role.app_ec2_role.name
 }
 
+resource "aws_iam_role_policy" "app_ec2_cloudwatch_logs" {
+  name = "${local.name}-ec2-cloudwatch-logs"
+  role = aws_iam_role.app_ec2_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [
+      {
+        Effect = "Allow"
+
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+
+        Resource = "${aws_cloudwatch_log_group.app_logs.arn}:*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = "logs:DescribeLogStreams"
+        Resource = "*"
+      }
+    ]
+  })
+}
