@@ -39,6 +39,17 @@ resource "aws_instance" "app_ec2" {
   vpc_security_group_ids      = [aws_security_group.app_ec2_sg.id]
   key_name                    = var.ec2_key_name
 
+  iam_instance_profile = aws_iam_instance_profile.app_ec2_profile.name
+
+  user_data = <<-EOF
+    #!/bin/bash
+    set -euxo pipefail
+
+    dnf install -y docker
+    systemctl enable --now docker
+    usermod -aG docker ec2-user
+  EOF
+
   tags = {
     Name = "${local.name}-app-instance"
   }
