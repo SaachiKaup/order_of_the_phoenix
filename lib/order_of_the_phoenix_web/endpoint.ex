@@ -41,6 +41,7 @@ defmodule OrderOfThePhoenixWeb.Endpoint do
     cookie_key: "request_logger"
 
   plug Plug.RequestId
+  plug Plug.Logger, log: :info
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
 
   plug Plug.Parsers,

@@ -85,3 +85,15 @@ resource "aws_cloudwatch_dashboard" "app_dashboard" {
     ]
   })
 }
+
+resource "aws_cloudwatch_log_group" "system_logs" {
+  name              = "/${local.name}/system-logs"
+  retention_in_days = 7
+}
+
+resource "aws_ssm_parameter" "cloudwatch_agent_config" {
+  name = "AmazonCloudWatch-${local.name}"
+  type = "String"
+
+  value = file("${path.module}/config/cloudwatch_agent.json")
+}

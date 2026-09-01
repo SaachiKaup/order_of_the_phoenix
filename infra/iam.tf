@@ -49,7 +49,10 @@ resource "aws_iam_role_policy" "app_ec2_cloudwatch_logs" {
           "logs:PutLogEvents"
         ]
 
-        Resource = "${aws_cloudwatch_log_group.app_logs.arn}:*"
+        Resource = [
+          "${aws_cloudwatch_log_group.app_logs.arn}:*",
+          "${aws_cloudwatch_log_group.system_logs.arn}:*"
+        ]
       },
       {
         Effect   = "Allow"
