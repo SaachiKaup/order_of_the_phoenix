@@ -13,6 +13,18 @@ jobs:
   terraform:
     runs-on: ubuntu-latest
 
+    env:
+      TF_VAR_project_name: ${{ vars.TF_PROJECT_NAME }}
+      TF_VAR_alb_name: ${{ vars.TF_ALB_NAME }}
+      TF_VAR_ecr_repository_name: ${{ vars.TF_ECR_REPOSITORY_NAME }}
+      TF_VAR_rds_db_name: ${{ vars.TF_RDS_DB_NAME }}
+      TF_VAR_github_repository: ${{ github.repository }}
+      TF_VAR_aws_region: us-east-1
+      TF_VAR_aws_account_id: ${{ vars.TF_AWS_ACCOUNT_ID }}
+      TF_VAR_ec2_key_name: ${{ vars.TF_EC2_KEY_NAME }}
+      TF_VAR_ssh_allowed_cidr: ${{ vars.TF_SSH_ALLOWED_CIDR }}
+      TF_VAR_rds_db_password: ${{ secrets.TF_RDS_DB_PASSWORD }}
+
     defaults:
       run:
         working-directory: infra
