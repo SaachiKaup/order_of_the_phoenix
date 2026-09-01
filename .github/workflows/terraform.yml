@@ -59,3 +59,39 @@ jobs:
   
       - name: Create Terraform plan
         run: terraform plan -input=false
+
+  publish:
+    needs: terraform
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: us-east-1
+      ECR_REPOSITORY_NAME: ${{ vars.TF_ECR_REPOSITORY_NAME }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials through OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_TERRAFORM_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: github-actions-ecr-${{ github.run_id }}
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          IMAGE_URI: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_NAME }}
+        run: |
+          docker build \
+            --tag "$IMAGE_URI:$IMAGE_TAG" \
+            --tag "$IMAGE_URI:latest" \
+            .
+          docker push "$IMAGE_URI:$IMAGE_TAG"
+            docker push "$IMAGE_URI:latest"
