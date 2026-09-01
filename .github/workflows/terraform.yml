@@ -99,3 +99,85 @@ jobs:
             .
           docker push "$IMAGE_URI:$IMAGE_TAG"
             docker push "$IMAGE_URI:latest"
+
+  deploy:
+    needs: publish
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: us-east-1
+      PROJECT_NAME: ${{ vars.TF_PROJECT_NAME }}
+      ECR_REPOSITORY_NAME: ${{ vars.TF_ECR_REPOSITORY_NAME }}
+      RDS_DB_NAME: ${{ vars.TF_RDS_DB_NAME }}
+      RDS_DB_PASSWORD: ${{ secrets.TF_RDS_DB_PASSWORD }}
+      SECRET_KEY_BASE: ${{ secrets.SECRET_KEY_BASE }}
+      APP_PORT: 4000
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_TERRAFORM_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: github-actions-deploy-${{ github.run_id }}
+
+      - name: Deploy container to EC2
+        run: |
+          set -euo pipefail
+
+          INSTANCE_ID=$(aws ec2 describe-instances \
+            --region "$AWS_REGION" \
+            --filters \
+              "Name=tag:Name,Values=${PROJECT_NAME}-app-instance" \
+              "Name=instance-state-name,Values=running" \
+            --query 'Reservations[0].Instances[0].InstanceId' \
+            --output text)
+
+          RDS_HOST=$(aws rds describe-db-instances \
+            --region "$AWS_REGION" \
+            --db-instance-identifier "${PROJECT_NAME}-db" \
+            --query 'DBInstances[0].Endpoint.Address' \
+            --output text)
+
+          IMAGE_URI=$(aws ecr describe-repositories \
+            --region "$AWS_REGION" \
+            --repository-names "$ECR_REPOSITORY_NAME" \
+            --query 'repositories[0].repositoryUri' \
+            --output text)
+
+          RDS_DB_PASSWORD_ENCODED=$(printf '%s' "$RDS_DB_PASSWORD" | jq -sRr @uri)
+          DATABASE_URL="ecto://postgres:${RDS_DB_PASSWORD_ENCODED}@${RDS_HOST}:5432/${RDS_DB_NAME}"
+
+          COMMAND=$(cat <<EOF
+          aws ecr get-login-password --region ${AWS_REGION} |
+            docker login --username AWS --password-stdin ${IMAGE_URI%%/*}
+
+          docker pull ${IMAGE_URI}:${GITHUB_SHA}
+
+          docker rm --force order-of-the-phoenix || true
+
+          docker run --detach \
+            --name order-of-the-phoenix \
+            --restart unless-stopped \
+            --publish "${APP_PORT}:${APP_PORT}" \
+            --env DATABASE_URL='${DATABASE_URL}' \
+            --env PORT="${APP_PORT}" \
+            --env SECRET_KEY_BASE='${SECRET_KEY_BASE}' \
+            --env PHX_SERVER=true \
+            ${IMAGE_URI}:${GITHUB_SHA}
+          EOF
+          )
+
+          COMMAND_ID=$(aws ssm send-command \
+            --region "$AWS_REGION" \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name AWS-RunShellScript \
+            --parameters "$(jq -n --arg command "$COMMAND" '{commands: [$command]}')" \
+            --query 'Command.CommandId' \
+            --output text)
+
+          aws ssm wait command-executed \
+            --region "$AWS_REGION" \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$INSTANCE_ID"
