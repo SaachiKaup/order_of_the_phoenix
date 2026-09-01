@@ -210,12 +210,11 @@ jobs:
             --retry 12 --retry-delay 5 "$APP_URL")
           test "$STATUS" = "200"
 
-
       - name: Set up Elixir and Erlang
         uses: erlef/setup-beam@v1
         with:
-          elixir-version: "1.17.3"
-          otp-version: "27.2"
+          elixir-version: "1.20.2"
+          otp-version: "29.0.3"
 
       - name: Run tests
         run: |
