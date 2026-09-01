@@ -41,6 +41,11 @@ resource "aws_instance" "app_ec2" {
 
   iam_instance_profile = aws_iam_instance_profile.app_ec2_profile.name
 
+  root_block_device {
+    volume_size = 5
+    volume_type = "gp3"
+  }
+
   user_data = <<-EOF
     #!/bin/bash
     set -euxo pipefail
