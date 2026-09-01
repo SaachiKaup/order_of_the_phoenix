@@ -97,8 +97,9 @@ jobs:
             --tag "$IMAGE_URI:$IMAGE_TAG" \
             --tag "$IMAGE_URI:latest" \
             .
+
           docker push "$IMAGE_URI:$IMAGE_TAG"
-            docker push "$IMAGE_URI:latest"
+          docker push "$IMAGE_URI:latest"
 
   deploy:
     needs: publish
@@ -183,3 +184,40 @@ jobs:
             --region "$AWS_REGION" \
             --command-id "$COMMAND_ID" \
             --instance-id "$INSTANCE_ID"
+
+  test:
+    needs: deploy
+    runs-on: ubuntu-latest
+
+    env:
+      APP_URL: "http://order-of-the-phoenix-alb-130819812.us-east-1.elb.amazonaws.com"
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check deployed app
+        run: |
+          STATUS=$(curl --silent --output /dev/null --write-out "%{http_code}" \
+            --retry 12 --retry-delay 5 "$APP_URL")
+          test "$STATUS" = "200"
+
+
+      - name: Set up Elixir and Erlang
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.17.3"
+          otp-version: "27.2"
+
+      - name: Run tests
+        run: |
+          mix deps.get
+          mix test
