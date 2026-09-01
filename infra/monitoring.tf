@@ -97,3 +97,84 @@ resource "aws_ssm_parameter" "cloudwatch_agent_config" {
 
   value = file("${path.module}/config/cloudwatch_agent.json")
 }
+
+resource "aws_cloudwatch_dashboard" "app_traffic_dashboard" {
+  dashboard_name = "${local.name}-traffic-dashboard"
+
+  dashboard_body = jsonencode({
+    widgets = [
+      {
+        type   = "metric"
+        x      = 0
+        y      = 0
+        width  = 8
+        height = 6
+
+        properties = {
+          title  = "ALB Request Count"
+          region = var.aws_region
+          view   = "timeSeries"
+          stat   = "Sum"
+          period = 300
+
+          metrics = [
+            [
+              "AWS/ApplicationELB",
+              "RequestCount",
+              "LoadBalancer",
+              aws_lb.app_alb.arn_suffix
+            ]
+          ]
+        }
+      },
+      {
+        type   = "metric"
+        x      = 8
+        y      = 0
+        width  = 8
+        height = 6
+
+        properties = {
+          title  = "ALB 5xx Count"
+          region = var.aws_region
+          view   = "timeSeries"
+          stat   = "Sum"
+          period = 300
+
+          metrics = [
+            [
+              "AWS/ApplicationELB",
+              "HTTPCode_ELB_5XX_Count",
+              "LoadBalancer",
+              aws_lb.app_alb.arn_suffix
+            ]
+          ]
+        }
+      },
+      {
+        type   = "metric"
+        x      = 16
+        y      = 0
+        width  = 8
+        height = 6
+
+        properties = {
+          title  = "Target Response Time"
+          region = var.aws_region
+          view   = "timeSeries"
+          stat   = "Average"
+          period = 300
+
+          metrics = [
+            [
+              "AWS/ApplicationELB",
+              "TargetResponseTime",
+              "LoadBalancer",
+              aws_lb.app_alb.arn_suffix
+            ]
+          ]
+        }
+      }
+    ]
+  })
+}
