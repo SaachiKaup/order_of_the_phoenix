@@ -60,6 +60,10 @@ jobs:
       - name: Create Terraform plan
         run: terraform plan -input=false
 
+       - name: Apply Terraform
+         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+         run: terraform apply -auto-approve -input=false
+
   publish:
     needs: terraform
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
