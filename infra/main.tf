@@ -45,10 +45,16 @@ resource "aws_instance" "app_ec2" {
     #!/bin/bash
     set -euxo pipefail
 
+    yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+    systemctl enable --now amazon-ssm-agent
+
     dnf install -y docker
     systemctl enable --now docker
     usermod -aG docker ec2-user
   EOF
+
+  user_data_replace_on_change = true
+
 
   tags = {
     Name = "${local.name}-app-instance"
