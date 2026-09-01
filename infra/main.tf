@@ -188,6 +188,7 @@ resource "aws_db_instance" "app_rds" {
   vpc_security_group_ids = [aws_security_group.app_rds_sg.id]
 
   publicly_accessible = false
+  backup_retention_period = 7
   skip_final_snapshot = true
 }
 
