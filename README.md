@@ -90,6 +90,10 @@ Role is also used during ECR setup. As in to push images to ECR. This was done f
 
 ![Successful Terraform, publish, deploy, test, and vulnerability scan jobs](images/workflow-success.png)
 
+### Other Tradeoffs
+
+While some are mentioned earlier, did not configure HTTPS as well for end application URL.
+
 ### Cost optimization measures
 
 Since application is small, t3.micro EC2 instance and db.t3.micro RDS used. RDS automated backup retention is 7 days.
